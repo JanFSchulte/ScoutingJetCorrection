@@ -1,0 +1,28 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Large intermediate data -- matched scouting/offline jet-pair comparison
+# tables (multi-hundred-MB), regenerable via the data-matching pipeline
+# against CMS DAS/xrootd; not appropriate for git. The final packaged
+# results/scoutingPUPPI_corrections.json.gz IS tracked (see .gitignore
+# negation below).
+results/*.npz
+results/**/*.npz
+results/**/*.png
+results/data_matching_periods/
+!results/scoutingPUPPI_corrections.json.gz
+
+# Slurm working directories (staged inputs, chunks, per-task logs, proxy
+# copies) created by submit_data_matching_slurm.py / run_stage3_slurm.py
+inputs/
+chunks/
+chunks_*/
+logs/
+proxy/
+manifest*.txt
+
+# Editor/OS cruft
+.DS_Store
+*.swp

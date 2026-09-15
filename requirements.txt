@@ -1,0 +1,7 @@
+numpy
+pandas
+awkward
+uproot
+fsspec-xrootd
+correctionlib
+matplotlib
