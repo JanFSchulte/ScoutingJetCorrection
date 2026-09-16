@@ -43,7 +43,7 @@ def _default_eta_bins():
 
 def derive_correction(table, pt_bins=None, eta_bins=None,
                        pt_field="scout_pt", eta_field="scout_eta", ref_field="off_pt",
-                       min_stat=50, min_scout_pt=15.0):
+                       min_stat=50, min_scout_pt=10.0):
     """Build the 2D (eta, pt) scale-factor map.
 
     Returns a dict: pt_bins, eta_bins (bin edges), sf, resolution, n (each
@@ -53,9 +53,10 @@ def derive_correction(table, pt_bins=None, eta_bins=None,
     there, and downstream lookups still work as clipped no-ops.
 
     min_scout_pt: see derive_response_curve's docstring -- same offline-vs-
-    scouting pt-floor mismatch applies here (drops unfiltered response
-    entries with pt_field below this, default 15 GeV to match offline's own
-    hard floor). Pass None to disable.
+    scouting pt-floor mismatch applies here (drops response entries with
+    pt_field below this, default 10 GeV -- deliberately below offline's own
+    15 GeV floor, so genuine soft scouting jets this correction needs to
+    learn from aren't excluded). Pass None to disable.
     """
     if pt_bins is None:
         pt_bins = _default_pt_bins()
@@ -219,27 +220,34 @@ def load_correction_iterative(path):
 
 def derive_response_curve(table, pt_bins=None, eta_bins=None,
                            pt_field="scout_pt", eta_field="scout_eta", ref_field="off_pt",
-                           min_stat=50, min_scout_pt=15.0):
+                           min_stat=50, min_scout_pt=10.0):
     """R(true_pt, eta) = median(scout_pt/off_pt), binned in ref_field (the
     true reference pt) and eta_field. Returns pt_bins, eta_bins, r, n
     ([n_eta_bins, n_pt_bins] arrays; r defaults to 1, a no-op, in bins with
     fewer than min_stat entries).
 
     min_scout_pt drops matched pairs with pt_field below this value before
-    binning (default 15 GeV, matching the hard floor MiniAOD/NanoAOD already
-    enforces on the OFFLINE side -- off_pt.min() is exactly 15.0 in every
-    comparison table checked, MC and data alike). The scouting side has no
-    such floor (scout_pt runs down to ~0 GeV): dr_match_jets() has no
-    response/pt-consistency requirement, so a real >=15 GeV offline jet can
-    end up geometrically "matched" to an unrelated near-zero-pt scouting
-    noise candidate whenever the genuine corresponding scouting jet wasn't
-    reconstructed. That's a matching/efficiency failure, not a pt-response
-    difference this multiplicative correction should be fit to -- and left
-    unfiltered it's a large effect concentrated exactly in the lowest,
-    most-used pt bin (up to ~22% of MC pairs and ~10% of data pairs in
-    off_pt E [15,20), dragging the derived median response there down by
-    several tens of percent). Pass min_scout_pt=None to disable (matches the
-    old, unfiltered behavior)."""
+    binning -- deliberately LOWER than the hard floor MiniAOD/NanoAOD
+    enforces on the OFFLINE side (off_pt.min() is exactly 15.0 in every
+    comparison table checked, MC and data alike): since this curve gets
+    INVERTED to correct a raw scouting jet's pt up toward the true/offline
+    scale, and the response here is well below 1 at low pt, a genuine raw
+    scouting jet at 10-14 GeV can legitimately correct up past 15 GeV --
+    excluding it from the derivation would mean never learning how to
+    correct exactly the jets that most need it. The 10 GeV default excludes
+    only the worst, most extreme tail: dr_match_jets() has no response/pt-
+    consistency requirement, so a real >=15 GeV offline jet can end up
+    geometrically "matched" to an unrelated near-zero-pt scouting noise
+    candidate whenever the genuine corresponding scouting jet wasn't
+    reconstructed (a matching/efficiency failure, not a pt-response
+    difference this multiplicative correction should be fit to). Checked
+    empirically (see project notes): dR to the matched offline jet degrades
+    smoothly as scout_pt drops from ~15 GeV to 0 -- there is no sharp
+    "noise vs. real" elbow, so 10 GeV is a judgment call trading off "keep
+    genuinely soft, hard-to-reconstruct real jets" against "don't let the
+    most poorly-measured tail dominate the median" -- not a uniquely correct
+    number. Pass min_scout_pt=None to disable, or 15.0 for the more
+    conservative (offline-floor-matching) cut this replaced."""
     if pt_bins is None:
         pt_bins = _default_pt_bins()
     if eta_bins is None:
