@@ -38,6 +38,11 @@ ETA_PT_RANGE = (30.0, None)
 
 def _corrected(table, curve):
     out = dict(table)
+    # setdefault, not assign: keeps the raw scout_pt fixed for
+    # response_vs_pt_data/vs_eta_data's min_scout_pt selection, so raw and
+    # corrected curves are computed over the SAME set of jets -- see
+    # response.py's response_vs_pt_data docstring.
+    out.setdefault("scout_pt_raw", table["scout_pt"])
     out["scout_pt"] = jet_correction.apply_correction_inverted(table["scout_pt"], table["scout_eta"], curve)
     return out
 

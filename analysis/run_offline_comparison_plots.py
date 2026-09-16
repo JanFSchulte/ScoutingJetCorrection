@@ -28,26 +28,40 @@ from analysis import jet_correction, response as response_mod
 
 def _corrected_table(table, corr):
     """A copy of table with scout_pt replaced by the SF-corrected pt, so the
-    existing response_vs_pt_data/response_vs_eta_data can be reused unchanged."""
+    existing response_vs_pt_data/response_vs_eta_data can be reused unchanged.
+
+    setdefault (not assign) on scout_pt_raw in every variant below: keeps the
+    raw scout_pt fixed for response_vs_pt_data/vs_eta_data's min_scout_pt
+    selection, so every "corrected" curve is computed over the SAME set of
+    jets as the raw one, not a population that shifted because scout_pt
+    itself got overwritten -- see response.py's response_vs_pt_data
+    docstring. Always called here with the true raw `table`, never a
+    previously-corrected one, so this is a single assignment in practice,
+    not an actual round-trip through an already-corrected value.
+    """
     out = dict(table)
+    out.setdefault("scout_pt_raw", table["scout_pt"])
     out["scout_pt"] = jet_correction.apply_correction(table["scout_pt"], table["scout_eta"], corr)
     return out
 
 
 def _fit_corrected_table(table, fit_corr):
     out = dict(table)
+    out.setdefault("scout_pt_raw", table["scout_pt"])
     out["scout_pt"] = jet_correction.apply_correction_fit(table["scout_pt"], table["scout_eta"], fit_corr)
     return out
 
 
 def _iterative_corrected_table(table, corrections):
     out = dict(table)
+    out.setdefault("scout_pt_raw", table["scout_pt"])
     out["scout_pt"] = jet_correction.apply_correction_iterative(table["scout_pt"], table["scout_eta"], corrections)
     return out
 
 
 def _inverted_corrected_table(table, curve):
     out = dict(table)
+    out.setdefault("scout_pt_raw", table["scout_pt"])
     out["scout_pt"] = jet_correction.apply_correction_inverted(table["scout_pt"], table["scout_eta"], curve)
     return out
 

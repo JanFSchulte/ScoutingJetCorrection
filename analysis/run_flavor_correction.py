@@ -55,6 +55,12 @@ CATEGORIES = {
 
 def _corrected_table(table, curve):
     out = dict(table)
+    # setdefault, not assign: preserves the TRUE original raw scout_pt even
+    # if `table` is itself already a corrected table (so response_vs_pt_data/
+    # vs_eta_data's min_scout_pt selection stays fixed to the real raw
+    # population, not whatever scout_pt happens to hold after correction --
+    # see response.py's response_vs_pt_data docstring for why this matters).
+    out.setdefault("scout_pt_raw", table["scout_pt"])
     out["scout_pt"] = jet_correction.apply_correction_inverted(table["scout_pt"], table["scout_eta"], curve)
     return out
 
